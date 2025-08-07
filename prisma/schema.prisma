@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -137,6 +136,9 @@ model GenericEntity {
   modified  DateTime
   curated   Boolean
   hits      Int?
+
+  // Store additional dynamic attributes from the JSON payload
+  attributes Json?
 
   @@map("generic_entities")
 }

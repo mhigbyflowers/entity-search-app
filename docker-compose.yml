@@ -1,0 +1,33 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  # Our PostgreSQL database service
+  db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: user # MUST match DATABASE_URL
+      POSTGRES_PASSWORD: password # MUST match DATABASE_URL
+      POSTGRES_DB: mydatabase # MUST match DATABASE_URL
+    ports:
+      # You can connect to the DB from your host machine on port 5433
+      - "5433:5432"
+    volumes:
+      # This persists the database data on your host machine
+      - postgres_data:/var/lib/postgresql/data
+
+  # Our Next.js application service
+  web:
+    build: . # Build the image from the Dockerfile in the current directory
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db # Tells Docker to start the 'db' service before the 'web' service
+    environment:
+      DATABASE_URL: ${DATABASE_URL} # Passes the DATABASE_URL from our .env file
+
+volumes:
+  postgres_data:

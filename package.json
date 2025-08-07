@@ -6,9 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:seed": "ts-node --compiler-options '{ \"module\": \"commonjs\" }' prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.13.0",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0"
@@ -16,13 +18,14 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.9",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
     "prisma": "^6.13.0",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
