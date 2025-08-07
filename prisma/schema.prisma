@@ -13,3 +13,130 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Enum for all the different entity types found in the JSON file.
+// This ensures that the `type` field is always one of these values.
+enum EntityType {
+  Username
+  Company
+  InternetDomainName
+  Malware
+  Person
+  City
+  Region
+  Facility
+  Airport
+  Source
+  Product
+  Entity
+  GeoEntity
+  OrgEntity
+  MarketIndex
+  NaturalFeature
+  Thread
+}
+
+// --------------------------------------------------
+// --- ENTITY MODELS ---
+// --------------------------------------------------
+
+model Username {
+
+  id        String    @id @db.VarChar(12)
+  name      String
+  type      EntityType
+  meta_type String    @map("meta_type")
+  created   DateTime
+  modified  DateTime
+  curated   Boolean
+  hits      Int?
+
+
+  domain       String?
+  createdAt    DateTime? @map("created_at")
+  externalId   String?   @map("external_id")
+  displayName  String?   @map("display_name")
+  commonNames  String[]  @map("common_names")
+  alias        String[]
+  deleted      DateTime?
+  owner        String?   // Could be a relation to another entity
+  
+  @@map("usernames")
+}
+
+model Company {
+  id        String    @id @db.VarChar(12)
+  name      String
+  type      EntityType
+  meta_type String    @map("meta_type")
+  created   DateTime
+  modified  DateTime
+  curated   Boolean
+  hits      Int?
+
+  // Company-specific fields
+  longname       String?
+  peers          String[]
+  latitude       Float?
+  longitude      Float?
+  external_links Json?     @map("external_links")
+  lists          String[]
+  industries     String[]
+  alias          String[]
+  domicile       String? 
+  category       String[]
+  
+  @@map("companies")
+}
+
+model Location {
+  // Common Fields
+  id        String    @id @db.VarChar(12)
+  name      String
+  type      EntityType
+  meta_type String    @map("meta_type")
+  created   DateTime?
+  modified  DateTime?
+  curated   Boolean?
+  hits      Int?
+
+  // Location-specific fields (for City, Region, Airport, Facility, etc.)
+  latitude       Float?
+  longitude      Float?
+  external_links Json?     @map("external_links")
+  containers     String[]
+  population     Int?
+  features       String[]
+  alias          String[]
+  
+  @@map("locations")
+}
+
+model InternetDomainName {
+  // Common Fields
+  id        String    @id @db.VarChar(20)
+  name      String
+  type      EntityType
+  meta_type String    @map("meta_type")
+  created   DateTime
+  modified  DateTime
+  curated   Boolean
+  hits      Int?
+
+  level Int?
+  
+  @@map("internet_domain_names")
+}
+model GenericEntity {
+  // Common Fields
+  id        String    @id @db.VarChar(12)
+  name      String
+  type      EntityType
+  meta_type String    @map("meta_type")
+  created   DateTime
+  modified  DateTime
+  curated   Boolean
+  hits      Int?
+
+  @@map("generic_entities")
+}
