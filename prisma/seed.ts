@@ -19,11 +19,19 @@ async function main() {
   }
   let parsed: any;
   try { parsed = JSON.parse(raw); } catch (e) { console.error('Invalid JSON in entities.json'); throw e; }
-  const entities = Object.values(parsed);
-  console.log(`Found ${entities.length} entities`);
+  const entityEntries = Object.entries(parsed);
+  console.log(`Found ${entityEntries.length} entities`);
 
-  for (const entity of entities as any[]) {
+  for (const [entityId, entityData] of entityEntries as [string, any][]) {
     try {
+      // Skip entities with undefined or null IDs
+      if (!entityId) {
+        console.warn(`Skipping entity with missing ID: ${entityData.name || 'unknown'}`);
+        continue;
+      }
+
+      const entity = { id: entityId, ...entityData };
+
       switch (entity.type as string) {
         case 'Username':
           await prisma.username.upsert({
@@ -138,10 +146,12 @@ async function main() {
           });
       }
     } catch (err) {
-      console.error(`Failed to upsert entity ${entity.id} (${entity.type}):`, err);
+      console.error(`Failed to upsert entity ${entityId} (${entityData.type}):`, err);
     }
   }
   console.log('✅ Seed complete');
 }
+
+main().catch(e => { console.error(e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); });
 
 main().catch(e => { console.error(e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); });

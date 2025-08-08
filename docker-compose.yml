@@ -28,6 +28,13 @@ services:
       - db # Tells Docker to start the 'db' service before the 'web' service
     environment:
       DATABASE_URL: ${DATABASE_URL} # Passes the DATABASE_URL from our .env file
+    develop:
+        watch:
+          - path: ./src
+            action: sync
+            target: /app/src # Destination path in the container
+          - path: ./package.json
+            action: rebuild
 
 volumes:
   postgres_data:
