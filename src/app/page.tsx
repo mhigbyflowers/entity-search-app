@@ -1,103 +1,123 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState } from "react";
+import Papa from "papaparse";
+
+type CSVRow = Record<string, string | number | boolean | null>;
+
+interface SearchResult {
+  [key: string]: unknown;
+}
+
+export default function SearchPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [rows, setRows] = useState<CSVRow[]>([]);
+  const [result, setResult] = useState<SearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+    setRows([]);
+    setResult(null);
+    setError(null);
+
+    if (!f) return;
+
+    Papa.parse<CSVRow>(f, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: true,
+      complete: (res) => {
+        const parsed = (res.data as CSVRow[]).filter((r) =>
+          Object.values(r).some((v) => (v ?? "").toString().trim() !== "")
+        );
+        setRows(parsed);
+      },
+      error: (err) => {
+        setError(err.message || "Failed to parse CSV");
+      },
+    });
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      if (!file || rows.length === 0) {
+        throw new Error("Please select a non-empty CSV file.");
+      }
+
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: file.name,
+          totalRows: rows.length,
+          rows, // send parsed CSV rows to the API
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "API request failed");
+      }
+
+      const data = await res.json();
+      setResult(data);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div style={{ maxWidth: 800, margin: "2rem auto" }}>
+      <h1>Entity Search</h1>
+      <form onSubmit={handleSearch}>
+        <input
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleFileChange}
+          style={{ width: "70%", padding: "0.5rem" }}
         />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+        <button
+          type="submit"
+          disabled={loading || !file}
+          style={{ marginLeft: "1rem" }}
+        >
+          {loading ? "Submitting..." : "Upload and Search"}
+        </button>
+      </form>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {file && (
+        <div style={{ marginTop: "0.75rem", fontSize: "0.9rem", color: "#555" }}>
+          Selected: {file.name} {rows.length > 0 ? `• ${rows.length} rows` : ""}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      {error && <div style={{ color: "red", marginTop: "1rem" }}>{error}</div>}
+
+      {rows.length > 0 && (
+        <details style={{ marginTop: "1rem" }}>
+          <summary>Preview first 5 rows</summary>
+          <pre style={{ background: "#f4f4f4", padding: "1rem" }}>
+            {JSON.stringify(rows.slice(0, 5), null, 2)}
+          </pre>
+        </details>
+      )}
+
+      {result && (
+        <pre style={{ marginTop: "1rem", background: "#f4f4f4", padding: "1rem" }}>
+          {JSON.stringify(result, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
